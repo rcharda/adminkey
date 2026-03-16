@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - My Box TV (Supabase)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #121212; color: #eee; margin: 0; }
@@ -131,6 +132,101 @@
         .tarif-card .card-actions { display:flex; gap:6px; margin-top:14px; }
         .tf-toggle-btn { padding:4px 12px; font-size:12px; border-radius:4px; cursor:pointer; border:none; background:#333; color:#eee; transition:background .2s; }
         .tf-toggle-btn:hover { background:#444; }
+
+        /* ── PRIORITÉ CHAÎNES ── */
+        #priorite-section .stats-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+        #priorite-section .prio-stat-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 10px; padding: 14px 20px; flex: 1; min-width: 110px; }
+        #priorite-section .prio-stat-val { font-size: 24px; font-weight: 900; color: #e50914; }
+        #priorite-section .prio-stat-lbl { font-size: 10px; color: #555; margin-top: 3px; letter-spacing: 1px; }
+        #priorite-section .prio-toolbar { background: #141414; border: 1px solid #1e1e1e; border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        #priorite-section .prio-toolbar input[type=text] { flex: 1; min-width: 160px; padding: 8px 12px; background: #0d0d0d; border: 1px solid #2a2a2a; border-radius: 7px; color: #fff; font-size: 13px; }
+        #priorite-section .prio-toolbar input:focus { outline: none; border-color: #e50914; }
+        #priorite-section .prio-toolbar select { padding: 8px 10px; background: #0d0d0d; border: 1px solid #2a2a2a; border-radius: 7px; color: #fff; font-size: 13px; cursor: pointer; }
+        .prio-btn { padding: 9px 16px; border-radius: 7px; border: none; cursor: pointer; font-weight: 700; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; transition: all .15s; white-space: nowrap; }
+        .prio-btn-red   { background: #e50914; color: #fff; }
+        .prio-btn-red:hover { background: #ff1a24; }
+        .prio-btn-green { background: linear-gradient(135deg,#2ecc71,#1a8a4a); color: #fff; box-shadow: 0 3px 12px rgba(46,204,113,.3); }
+        .prio-btn-green:hover { filter: brightness(1.1); }
+        .prio-btn-gray  { background: #1e1e1e; color: #aaa; border: 1px solid #2a2a2a; }
+        .prio-btn-gray:hover { background: #252525; color: #fff; }
+        .prio-btn:disabled { opacity: .4; cursor: not-allowed; filter: none; }
+        .prio-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        @media (max-width: 700px) { .prio-columns { grid-template-columns: 1fr; } }
+        .prio-col-box { background: #141414; border: 1px solid #1e1e1e; border-radius: 10px; display: flex; flex-direction: column; height: 580px; }
+        .prio-col-header { padding: 11px 14px; border-bottom: 1px solid #1e1e1e; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 8px; flex-wrap: wrap; }
+        .prio-col-title { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; }
+        .prio-col-count { font-size: 11px; color: #555; }
+        .prio-col-list  { flex: 1; overflow-y: auto; padding: 5px; scrollbar-width: thin; scrollbar-color: #2a2a2a transparent; }
+        .prio-col-list::-webkit-scrollbar { width: 3px; }
+        .prio-col-list::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
+        .prio-ch-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; margin-bottom: 2px; background: #0d0d0d; border: 1px solid transparent; user-select: none; transition: background .1s; }
+        .prio-ch-item:hover { background: #161616; border-color: #222; }
+        .prio-ch-item.drag-over { border-color: #e50914 !important; background: rgba(229,9,20,.07) !important; }
+        .prio-ch-item.dragging { opacity: .3; }
+        .prio-ch-item.is-priority { border-left: 2px solid #ffd700; }
+        .prio-ch-item.top3 { border-left: 2px solid #e50914; }
+        .prio-ch-drag { color: #252525; font-size: 11px; cursor: grab; flex-shrink: 0; padding: 2px; }
+        .prio-ch-drag:hover { color: #555; }
+        .prio-ch-rank { font-size: 10px; color: #333; font-weight: 700; width: 22px; text-align: right; flex-shrink: 0; font-family: monospace; }
+        .prio-ch-rank.gold { color: #ffd700; }
+        .prio-ch-logo { width: 28px; height: 28px; object-fit: contain; background: #fff; border-radius: 4px; padding: 1px; flex-shrink: 0; }
+        .prio-ch-name { font-size: 12px; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .prio-ch-cat  { font-size: 10px; color: #444; flex-shrink: 0; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .prio-ch-btn { width: 24px; height: 24px; border-radius: 4px; border: none; background: transparent; color: #333; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .12s; }
+        .prio-ch-btn:hover { background: rgba(229,9,20,.2); color: #e50914; }
+        .prio-ch-btn.add:hover { background: rgba(46,204,113,.2); color: #2ecc71; }
+        .prio-ch-btn:disabled { opacity: .2; cursor: default; background: transparent !important; }
+        .prio-drop-hint { text-align: center; padding: 50px 20px; color: #252525; pointer-events: none; }
+        .prio-drop-hint i { font-size: 28px; margin-bottom: 10px; display: block; }
+        .prio-drop-hint p { font-size: 12px; line-height: 1.8; }
+        .prio-loading { text-align: center; padding: 40px; color: #333; font-size: 13px; }
+        .prio-loading i { font-size: 22px; animation: spin .7s linear infinite; margin-bottom: 10px; display: block; }
+        #prio-save-bar { background: #141414; border: 1px solid #1e1e1e; border-radius: 10px; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-top: 14px; }
+        .prio-save-info { font-size: 13px; color: #555; }
+        .prio-save-info b { color: #fff; }
+        .prio-unsaved-dot { display: inline-block; width: 8px; height: 8px; background: #ffd700; border-radius: 50%; margin-left: 6px; animation: pulse 1.2s infinite; vertical-align: middle; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+        #prio-mini-player { background: #0d0d0d; border: 1px solid #1e1e1e; border-radius: 12px; margin-bottom: 20px; overflow: hidden; transition: all .3s cubic-bezier(.4,0,.2,1); }
+        #prio-mini-player.floating { position: fixed; bottom: 80px; right: 20px; width: 300px; z-index: 500; margin: 0; box-shadow: 0 8px 32px rgba(0,0,0,.8), 0 0 0 1px rgba(229,9,20,.3); border-color: rgba(229,9,20,.4); }
+        #prio-mini-player.floating #prio-player-wrap video { height: 140px; }
+        #prio-mini-player.floating .prio-player-controls { padding: 6px 10px; }
+        #prio-pip-toggle { background: none; border: none; color: #555; cursor: pointer; font-size: 12px; padding: 4px 6px; transition: color .15s; }
+        #prio-pip-toggle:hover { color: #0af; }
+        #prio-pip-drag-handle { cursor: move; padding: 4px 6px; color: #252525; font-size: 11px; }
+        #prio-pip-drag-handle:hover { color: #555; }
+        #prio-mini-player-header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #1e1e1e; }
+        #prio-mini-player-title { font-size: 12px; font-weight: 700; color: #ccc; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        #prio-mini-player-status { font-size: 10px; color: #555; white-space: nowrap; }
+        #prio-mini-player-status.live { color: #2ecc71; }
+        #prio-mini-player-status.err  { color: #e50914; }
+        #prio-player-wrap { position: relative; background: #000; }
+        #prio-player-wrap video { width: 100%; height: 180px; display: block; object-fit: contain; background: #000; }
+        #prio-player-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.75); flex-direction: column; gap: 8px; }
+        #prio-player-overlay.hidden { display: none; }
+        .prio-player-controls { display: flex; align-items: center; gap: 8px; padding: 8px 14px; }
+        #prio-vol-range { flex: 1; accent-color: #e50914; height: 3px; cursor: pointer; }
+        #prio-btn-stop { background: none; border: none; color: #555; cursor: pointer; font-size: 13px; padding: 4px 7px; border-radius: 5px; transition: color .15s; }
+        #prio-btn-stop:hover { color: #e50914; }
+        #prio-btn-mute { background: none; border: none; color: #555; cursor: pointer; font-size: 12px; padding: 4px 5px; }
+        #prio-btn-mute:hover { color: #fff; }
+        #prio-add-panel { background: #0d0d0d; border: 1px solid #1e1e1e; border-radius: 12px; margin-bottom: 14px; overflow: hidden; }
+        #prio-add-panel-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; cursor: pointer; user-select: none; }
+        #prio-add-panel-header:hover { background: rgba(255,255,255,.02); }
+        #prio-add-panel-title { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: #2ecc71; }
+        #prio-add-panel-body { padding: 12px 14px; border-top: 1px solid #1e1e1e; display: none; }
+        #prio-add-panel-body.open { display: block; }
+        .prio-add-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+        @media(max-width:600px){ .prio-add-row { grid-template-columns: 1fr; } }
+        .prio-add-row input { padding: 8px 10px; background: #141414; border: 1px solid #2a2a2a; border-radius: 6px; color: #fff; font-size: 12px; width: 100%; }
+        .prio-add-row input:focus { outline: none; border-color: #2ecc71; }
+        .prio-add-row input::placeholder { color: #333; }
+        .prio-add-preview { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: #141414; border: 1px solid #2a2a2a; border-radius: 6px; margin-bottom: 8px; min-height: 44px; }
+        .prio-add-preview img { width: 32px; height: 32px; object-fit: contain; background: #fff; border-radius: 4px; padding: 2px; flex-shrink: 0; }
+        .prio-add-preview-name { font-size: 12px; font-weight: 600; flex: 1; color: #ccc; }
+        .prio-add-preview-cat  { font-size: 10px; color: #555; }
+        .prio-add-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .prio-export-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+        .prio-export-bar span { font-size: 11px; color: #444; }
     </style>
 </head>
 <body>
@@ -184,6 +280,7 @@
         <button class="tab-btn" onclick="showTab('message-section')"><i class="fas fa-bullhorn"></i> MESSAGE</button>
         <button class="tab-btn" onclick="showTab('tarifs-section')"><i class="fas fa-tags"></i> ABONNEMENTS</button>
         <button class="tab-btn" onclick="showTab('update-section')"><i class="fas fa-rocket"></i> MISES À JOUR</button>
+        <button class="tab-btn" onclick="showTab('priorite-section');prioLoadData()"><i class="fas fa-star"></i> PRIORITÉ CHAÎNES</button>
     </div>
 
     <!-- ---- UTILISATEURS ---- -->
@@ -395,6 +492,136 @@
             </div>
         </div>
     </div>
+
+    <!-- ---- PRIORITÉ CHAÎNES ---- -->
+    <div id="priorite-section" class="section">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+            <div>
+                <div style="font-size:15px;font-weight:900;letter-spacing:1px;">PRIORITÉS DES CHAÎNES</div>
+                <div style="font-size:11px;color:#555;margin-top:2px;letter-spacing:1px;">LES PRIORITAIRES APPARAISSENT EN TÊTE POUR TOUS LES CLIENTS</div>
+            </div>
+            <div style="display:flex;gap:8px;">
+                <button class="prio-btn prio-btn-gray" onclick="_prioLoaded=false;prioLoadData()"><i class="fas fa-sync-alt"></i> Actualiser</button>
+                <button class="prio-btn prio-btn-gray" onclick="prioClearAll()"><i class="fas fa-undo"></i> Tout effacer</button>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+            <div class="prio-stat-card"><div class="prio-stat-val" id="prio-st-total">—</div><div class="prio-stat-lbl">TOTAL CHAÎNES</div></div>
+            <div class="prio-stat-card"><div class="prio-stat-val" id="prio-st-prio" style="color:#ffd700;">0</div><div class="prio-stat-lbl">EN PRIORITÉ (haut)</div></div>
+            <div class="prio-stat-card"><div class="prio-stat-val" id="prio-st-rest">—</div><div class="prio-stat-lbl">EN BAS</div></div>
+            <div class="prio-stat-card"><div class="prio-stat-val" id="prio-st-ver">—</div><div class="prio-stat-lbl">VERSION PUBLIÉE</div></div>
+        </div>
+
+        <div class="prio-toolbar">
+            <i class="fas fa-search" style="color:#333;font-size:12px;"></i>
+            <input type="text" id="prio-search-input" placeholder="Rechercher une chaîne..." oninput="prioFilterLeft()">
+            <select id="prio-cat-filter" onchange="prioFilterLeft()"><option value="">Toutes catégories</option></select>
+            <button class="prio-btn prio-btn-gray" onclick="prioAddAllVisible()"><i class="fas fa-plus-circle"></i> Ajouter tout le filtre</button>
+        </div>
+
+        <div id="prio-mini-player">
+            <div id="prio-mini-player-header">
+                <i class="fas fa-grip-vertical" id="prio-pip-drag-handle" title="Déplacer"></i>
+                <img id="prio-player-logo" src="" style="width:24px;height:24px;object-fit:contain;background:#fff;border-radius:3px;padding:1px;display:none;flex-shrink:0;">
+                <span id="prio-mini-player-title">Cliquez ▶ sur une chaîne pour tester</span>
+                <span id="prio-mini-player-status">⏸</span>
+                <button id="prio-pip-toggle" onclick="prioTogglePiP()" title="Mode flottant"><i class="fas fa-external-link-alt"></i></button>
+                <button id="prio-btn-stop" onclick="prioStopPlayer()" title="Arrêter"><i class="fas fa-stop"></i></button>
+            </div>
+            <div id="prio-player-wrap">
+                <video id="prio-test-video" playsinline></video>
+                <div id="prio-player-overlay">
+                    <i class="fas fa-play-circle" style="font-size:28px;color:#222;"></i>
+                    <p style="font-size:11px;color:#333;">Cliquez ▶ sur une chaîne</p>
+                </div>
+            </div>
+            <div class="prio-player-controls">
+                <i class="fas fa-volume-up" style="color:#333;font-size:11px;"></i>
+                <input type="range" id="prio-vol-range" min="0" max="100" value="80" oninput="prioSetVol(this.value)">
+                <span id="prio-vol-pct" style="font-size:10px;color:#444;width:30px;">80%</span>
+                <button id="prio-btn-mute" onclick="prioToggleMute()"><i class="fas fa-volume-mute"></i></button>
+            </div>
+        </div>
+
+        <div class="prio-export-bar">
+            <button class="prio-btn prio-btn-gray" onclick="prioExportJSON()"><i class="fas fa-download"></i> Exporter channels.json</button>
+            <button class="prio-btn prio-btn-gray" onclick="prioToggleAddPanel()"><i class="fas fa-plus-circle" style="color:#2ecc71;"></i> Ajouter une chaîne manuellement</button>
+            <span id="prio-export-info"></span>
+        </div>
+
+        <div id="prio-add-panel">
+            <div id="prio-add-panel-header" onclick="prioToggleAddPanel()">
+                <span id="prio-add-panel-title"><i class="fas fa-plus-circle" style="margin-right:6px;"></i>AJOUTER UNE CHAÎNE MANUELLEMENT</span>
+                <i class="fas fa-chevron-down" id="prio-add-panel-chevron" style="color:#333;font-size:11px;transition:transform .2s;"></i>
+            </div>
+            <div id="prio-add-panel-body">
+                <div class="prio-add-row">
+                    <input type="text" id="prio-add-name" placeholder="Nom de la chaîne *" oninput="prioUpdateAddPreview()">
+                    <input type="text" id="prio-add-url"  placeholder="URL du flux (http://... ou .m3u8) *" oninput="prioUpdateAddPreview()">
+                </div>
+                <div class="prio-add-row">
+                    <input type="text" id="prio-add-logo" placeholder="URL du logo (optionnel)" oninput="prioUpdateAddPreview()">
+                    <input type="text" id="prio-add-cat"  placeholder="Catégorie (ex: Sports, News...)" list="prio-cat-datalist" oninput="prioUpdateAddPreview()">
+                    <datalist id="prio-cat-datalist"></datalist>
+                </div>
+                <div class="prio-add-preview">
+                    <img id="prio-add-preview-logo" src="https://via.placeholder.com/32?text=TV" onerror="this.src='https://via.placeholder.com/32?text=TV'">
+                    <span class="prio-add-preview-name" id="prio-add-preview-name">Nom de la chaîne</span>
+                    <span class="prio-add-preview-cat"  id="prio-add-preview-cat">Catégorie</span>
+                </div>
+                <div class="prio-add-actions">
+                    <button class="prio-btn prio-btn-gray" onclick="prioTestAddChannel()"><i class="fas fa-play" style="color:#0af;"></i> Tester le flux</button>
+                    <button class="prio-btn prio-btn-gray" onclick="prioAddChannelToList(false)"><i class="fas fa-plus"></i> Ajouter en bas</button>
+                    <button class="prio-btn prio-btn-green" onclick="prioAddChannelToList(true)"><i class="fas fa-star"></i> Ajouter en priorité</button>
+                    <button class="prio-btn prio-btn-gray" onclick="prioClearAddForm()" style="margin-left:auto;"><i class="fas fa-times"></i> Vider</button>
+                </div>
+                <div id="prio-add-msg" style="font-size:11px;margin-top:8px;min-height:14px;"></div>
+            </div>
+        </div>
+
+        <div class="prio-columns">
+            <div class="prio-col-box">
+                <div class="prio-col-header">
+                    <span class="prio-col-title" style="color:#aaa;"><i class="fas fa-list" style="margin-right:5px;"></i>TOUTES LES CHAÎNES</span>
+                    <span class="prio-col-count" id="prio-left-count">—</span>
+                </div>
+                <div class="prio-col-list" id="prio-left-list">
+                    <div class="prio-loading"><i class="fas fa-spinner"></i>Chargement...</div>
+                </div>
+            </div>
+
+            <div class="prio-col-box">
+                <div class="prio-col-header">
+                    <span class="prio-col-title" style="color:#ffd700;"><i class="fas fa-star" style="margin-right:5px;"></i>PRIORITAIRES <span id="prio-unsaved-dot" style="display:none;" class="prio-unsaved-dot"></span></span>
+                    <span class="prio-col-count" id="prio-right-count">0 chaîne(s)</span>
+                </div>
+                <div class="prio-col-list" id="prio-right-list"
+                    ondragover="event.preventDefault()"
+                    ondrop="prioOnDropEmptyRight(event)">
+                    <div id="prio-drop-hint" class="prio-drop-hint">
+                        <i class="fas fa-star"></i>
+                        <p>Glissez des chaînes ici<br>ou cliquez <b style="color:#2ecc71;">+</b><br><br>Elles seront <b style="color:#ffd700;">en tête de liste</b><br>pour tous vos clients<br>Les autres restent en bas</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="prio-save-bar">
+            <div class="prio-save-info">
+                <span id="prio-nb" style="color:#ffd700;font-weight:700;">0</span> prioritaires en haut •
+                <b id="prio-rest-nb">—</b> autres en bas •
+                Total : <b id="prio-total-nb">—</b>
+            </div>
+            <div style="display:flex;gap:8px;">
+                <button class="prio-btn prio-btn-green" onclick="prioSaveAndPublish()" id="prio-btn-save">
+                    <i class="fas fa-upload"></i> SAUVEGARDER &amp; PUBLIER
+                </button>
+            </div>
+        </div>
+
+    </div><!-- /#priorite-section -->
 
 </div><!-- /#dashboard -->
 
@@ -1100,6 +1327,434 @@ function showUpdMsg(msg, type) {
     el.style.display = 'block';
     if (type === 'success') setTimeout(() => { el.style.display = 'none'; }, 6000);
 }
+
+// =====================================================
+// PRIORITÉ CHAÎNES — toutes les fonctions
+// =====================================================
+let prioAllChannels  = [];
+let prioURLs         = [];
+let prioLeftFiltered = [];
+let prioDragSrcIdx   = -1;
+let _prioCurrentVersion = '';
+const PRIO_BATCH = 60;
+let _prioLeftOffset = 0;
+let _prioScrollObserver = null;
+let _prioHls = null, _prioMuted = false, _prioCurrentPlayUrl = '';
+let _prioPip = false, _prioPipDragging = false, _prioPipX = 20, _prioPipY = 80;
+let _prioLoaded = false;
+
+async function prioLoadData() {
+    if (_prioLoaded) return; // déjà chargé, ne recharger que si Actualiser explicite
+    _prioLoaded = true;
+    document.getElementById('prio-left-list').innerHTML = '<div class="prio-loading"><i class="fas fa-spinner"></i>Chargement des chaînes...</div>';
+    try {
+        const rows = await sbGet('channels_data', 'select=version,count,data&order=published_at.desc&limit=1');
+        if (!rows || !rows.length || !Array.isArray(rows[0].data)) {
+            document.getElementById('prio-left-list').innerHTML = '<div class="prio-drop-hint"><i class="fas fa-exclamation-triangle" style="color:#e50914;"></i><p>Aucune chaîne.<br>Publiez d\'abord via le superadmin.</p></div>';
+            return;
+        }
+        prioAllChannels = rows[0].data;
+        _prioCurrentVersion = rows[0].version || '1.0';
+        document.getElementById('prio-st-total').innerText = prioAllChannels.length.toLocaleString('fr');
+        document.getElementById('prio-st-ver').innerText   = _prioCurrentVersion;
+
+        const cats = [...new Set(prioAllChannels.map(c => c.category || 'Autres'))].sort();
+        const sel  = document.getElementById('prio-cat-filter');
+        sel.innerHTML = '<option value="">Toutes catégories</option>';
+        cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; sel.appendChild(o); });
+
+        try {
+            const prows = await sbGet('channel_priorities', 'select=priorities&id=eq.1&limit=1');
+            if (prows && prows.length && Array.isArray(prows[0].priorities)) {
+                prioURLs = prows[0].priorities.filter(u => prioAllChannels.some(c => c.url === u));
+                toast('✅ ' + prioURLs.length + ' priorités précédentes restaurées', '#2ecc71');
+            }
+        } catch(e) { prioURLs = []; }
+
+        prioFilterLeft();
+        prioRenderRight();
+        prioUpdateStats();
+    } catch(e) {
+        document.getElementById('prio-left-list').innerHTML = '<div class="prio-drop-hint"><i class="fas fa-times-circle" style="color:#e50914;"></i><p>Erreur : ' + _prioEsc(e.message) + '</p></div>';
+    }
+}
+
+function prioFilterLeft() {
+    const term = (document.getElementById('prio-search-input').value || '').toLowerCase().trim();
+    const cat  = document.getElementById('prio-cat-filter').value;
+    const prioSet = new Set(prioURLs);
+    prioLeftFiltered = prioAllChannels.filter(ch => !prioSet.has(ch.url) && (!cat || ch.category === cat) && (!term || ch.name.toLowerCase().includes(term)));
+    document.getElementById('prio-left-count').innerText = prioLeftFiltered.length.toLocaleString('fr') + ' chaîne(s)';
+    prioRenderLeft();
+}
+
+function prioRenderLeft() {
+    const list = document.getElementById('prio-left-list');
+    list.innerHTML = '';
+    _prioLeftOffset = 0;
+    if (!prioLeftFiltered.length) {
+        list.innerHTML = '<div class="prio-drop-hint" style="padding:30px 20px;"><i class="fas fa-check-circle" style="color:#2ecc71;font-size:20px;"></i><p>Toutes ces chaînes sont déjà en priorité !</p></div>';
+        return;
+    }
+    _appendPrioLeftBatch(list);
+    const sentinel = document.createElement('div');
+    sentinel.id = 'prio-left-sentinel';
+    list.appendChild(sentinel);
+    if (_prioScrollObserver) _prioScrollObserver.disconnect();
+    _prioScrollObserver = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting && _prioLeftOffset < prioLeftFiltered.length) _appendPrioLeftBatch(list);
+    }, { root: list, threshold: 0.1 });
+    _prioScrollObserver.observe(sentinel);
+}
+
+function _appendPrioLeftBatch(list) {
+    const sentinel = document.getElementById('prio-left-sentinel');
+    const frag = document.createDocumentFragment();
+    const end  = Math.min(_prioLeftOffset + PRIO_BATCH, prioLeftFiltered.length);
+    for (let i = _prioLeftOffset; i < end; i++) frag.appendChild(prioMakeLeftItem(prioLeftFiltered[i]));
+    _prioLeftOffset = end;
+    if (sentinel) list.insertBefore(frag, sentinel);
+    else list.appendChild(frag);
+    if (sentinel) sentinel.style.display = (_prioLeftOffset >= prioLeftFiltered.length) ? 'none' : 'block';
+}
+
+function prioMakeLeftItem(ch) {
+    const div = document.createElement('div');
+    div.className = 'prio-ch-item'; div.draggable = true; div.dataset.url = ch.url;
+    div.innerHTML = '<img class="prio-ch-logo" src="' + _prioEsc(ch.logo||'') + '" onerror="this.src=\'https://via.placeholder.com/28?text=TV\'" loading="lazy">' +
+        '<span class="prio-ch-name" title="' + _prioEsc(ch.name) + '">' + _prioEsc(ch.name) + '</span>' +
+        '<span class="prio-ch-cat">' + _prioEsc(ch.category||'') + '</span>' +
+        '<button class="prio-ch-btn" title="Tester"><i class="fas fa-play"></i></button>' +
+        '<button class="prio-ch-btn add" title="Ajouter en priorité"><i class="fas fa-plus"></i></button>';
+    div.querySelectorAll('.prio-ch-btn')[0].onclick = () => prioTestChannel(ch);
+    div.querySelector('button.add').onclick = () => prioAddToPrio(ch.url);
+    div.addEventListener('dragstart', e => { e.dataTransfer.setData('url', ch.url); e.dataTransfer.setData('from', 'left'); div.classList.add('dragging'); });
+    div.addEventListener('dragend', () => div.classList.remove('dragging'));
+    return div;
+}
+
+function prioRenderRight() {
+    const list = document.getElementById('prio-right-list');
+    document.getElementById('prio-right-count').innerText = prioURLs.length + ' chaîne(s)';
+    list.innerHTML = '';
+    if (!prioURLs.length) {
+        const h = document.createElement('div'); h.id = 'prio-drop-hint'; h.className = 'prio-drop-hint';
+        h.innerHTML = '<i class="fas fa-star"></i><p>Glissez des chaînes ici<br>ou cliquez <b style="color:#2ecc71;">+</b><br><br>Elles seront <b style="color:#ffd700;">en tête de liste</b><br>pour tous vos clients<br>Les autres restent en bas</p>';
+        list.appendChild(h); return;
+    }
+    const frag = document.createDocumentFragment();
+    prioURLs.forEach((url, i) => { const ch = prioAllChannels.find(c => c.url === url); if (ch) frag.appendChild(prioMakeRightItem(ch, i)); });
+    list.appendChild(frag);
+}
+
+function prioMakeRightItem(ch, index) {
+    const div = document.createElement('div');
+    div.className = 'prio-ch-item is-priority' + (index < 3 ? ' top3' : '');
+    div.draggable = true; div.dataset.url = ch.url; div.dataset.idx = index;
+    div.innerHTML =
+        '<i class="fas fa-grip-vertical prio-ch-drag"></i>' +
+        '<span class="prio-ch-rank ' + (index < 3 ? 'gold' : '') + '">' + (index+1) + '</span>' +
+        '<img class="prio-ch-logo" src="' + _prioEsc(ch.logo||'') + '" onerror="this.src=\'https://via.placeholder.com/28?text=TV\'" loading="lazy">' +
+        '<span class="prio-ch-name" title="' + _prioEsc(ch.name) + '">' + _prioEsc(ch.name) + '</span>' +
+        '<span class="prio-ch-cat">' + _prioEsc(ch.category||'') + '</span>' +
+        '<button class="prio-ch-btn" title="Monter"' + (index===0?' disabled':'') + '><i class="fas fa-arrow-up"></i></button>' +
+        '<button class="prio-ch-btn" title="Descendre"' + (index===prioURLs.length-1?' disabled':'') + '><i class="fas fa-arrow-down"></i></button>' +
+        '<button class="prio-ch-btn" title="Tester"><i class="fas fa-play"></i></button>' +
+        '<button class="prio-ch-btn" title="Retirer"><i class="fas fa-times"></i></button>';
+    const btns = div.querySelectorAll('.prio-ch-btn');
+    btns[0].onclick = () => prioMovePrio(index, -1);
+    btns[1].onclick = () => prioMovePrio(index,  1);
+    btns[2].onclick = () => prioTestChannel(ch);
+    btns[3].onclick = () => prioRemoveFromPrio(ch.url);
+    div.addEventListener('dragstart', e => { prioDragSrcIdx = index; e.dataTransfer.setData('url', ch.url); e.dataTransfer.setData('from', 'right'); div.classList.add('dragging'); });
+    div.addEventListener('dragend',   () => { div.classList.remove('dragging'); prioDragSrcIdx = -1; });
+    div.addEventListener('dragover',  e => { e.preventDefault(); div.classList.add('drag-over'); });
+    div.addEventListener('dragleave', () => div.classList.remove('drag-over'));
+    div.addEventListener('drop', e => {
+        e.preventDefault(); e.stopPropagation(); div.classList.remove('drag-over');
+        const from = e.dataTransfer.getData('from');
+        const url  = e.dataTransfer.getData('url');
+        if (from === 'right' && prioDragSrcIdx !== -1 && prioDragSrcIdx !== index) {
+            const [m] = prioURLs.splice(prioDragSrcIdx, 1); prioURLs.splice(index, 0, m);
+        } else if (from === 'left' && url && !prioURLs.includes(url)) {
+            prioURLs.splice(index, 0, url);
+        }
+        prioMarkDirty(); prioRenderRight(); prioFilterLeft();
+    });
+    return div;
+}
+
+function prioOnDropEmptyRight(e) {
+    const from = e.dataTransfer.getData('from');
+    const url  = e.dataTransfer.getData('url');
+    if (from === 'left' && url && !prioURLs.includes(url)) {
+        prioURLs.push(url); prioMarkDirty(); prioRenderRight(); prioFilterLeft();
+    }
+}
+
+function prioAddToPrio(url) { if (prioURLs.includes(url)) return; prioURLs.push(url); prioMarkDirty(); prioRenderRight(); prioFilterLeft(); }
+function prioRemoveFromPrio(url) { prioURLs = prioURLs.filter(u => u !== url); prioMarkDirty(); prioRenderRight(); prioFilterLeft(); }
+function prioMovePrio(i, d) { const n = i+d; if (n<0||n>=prioURLs.length) return; [prioURLs[i],prioURLs[n]]=[prioURLs[n],prioURLs[i]]; prioMarkDirty(); prioRenderRight(); }
+
+function prioAddAllVisible() {
+    let added = 0;
+    prioLeftFiltered.slice(0,400).forEach(ch => { if (!prioURLs.includes(ch.url)) { prioURLs.push(ch.url); added++; } });
+    if (!added) { toast('⚠️ Toutes ces chaînes sont déjà en priorité', '#ffd700'); return; }
+    prioMarkDirty(); prioRenderRight(); prioFilterLeft(); toast('✅ ' + added + ' chaînes ajoutées', '#2ecc71');
+}
+
+function prioClearAll() {
+    if (!prioURLs.length) return;
+    if (!confirm('Effacer toutes les priorités ?')) return;
+    prioURLs = []; prioMarkDirty(); prioRenderRight(); prioFilterLeft(); toast('🔄 Priorités effacées', '#0af');
+}
+
+async function prioSaveAndPublish() {
+    const btn = document.getElementById('prio-btn-save');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publication...';
+    btn.disabled = true;
+    try {
+        const prioSet    = new Set(prioURLs);
+        const prioChains = prioURLs.map(url => prioAllChannels.find(c => c.url === url)).filter(Boolean);
+        const restChains = prioAllChannels.filter(c => !prioSet.has(c.url));
+        const newData    = [...prioChains, ...restChains];
+
+        const now = new Date();
+        const newVersion = now.getFullYear() + '.' + String(now.getMonth()+1).padStart(2,'0') + '.' +
+            String(now.getDate()).padStart(2,'0') + '-' +
+            String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0');
+        const kb = (new Blob([JSON.stringify(newData)]).size / 1024).toFixed(1);
+
+        await sbInsert('channels_data', {
+            version:      newVersion,
+            data:         newData,
+            note:         prioURLs.length + ' prioritaires en tête',
+            size_kb:      parseFloat(kb),
+            published_at: now.toISOString()
+        });
+
+        const prioRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/channel_priorities?on_conflict=id`,
+            {
+                method:  'POST',
+                headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+                body: JSON.stringify({ id: 1, priorities: prioURLs, count: prioURLs.length, saved_at: now.toISOString() })
+            }
+        );
+        if (!prioRes.ok) console.warn('channel_priorities save error:', await prioRes.text());
+
+        prioAllChannels     = newData;
+        _prioCurrentVersion = newVersion;
+        document.getElementById('prio-st-ver').innerText      = newVersion;
+        document.getElementById('prio-unsaved-dot').style.display = 'none';
+        toast('🚀 Publié v' + newVersion + ' — ' + prioURLs.length + ' prioritaires + ' + restChains.length.toLocaleString('fr') + ' autres', '#2ecc71');
+        prioUpdateStats();
+    } catch(e) {
+        toast('❌ Erreur : ' + e.message, '#ff6b6b');
+    } finally {
+        btn.innerHTML = '<i class="fas fa-upload"></i> SAUVEGARDER & PUBLIER';
+        btn.disabled  = false;
+    }
+}
+
+function prioMarkDirty() { document.getElementById('prio-unsaved-dot').style.display = 'inline-block'; prioUpdateStats(); }
+function prioUpdateStats() {
+    const t = prioAllChannels.length, p = prioURLs.length, r = t - p;
+    document.getElementById('prio-st-prio').innerText  = p;
+    document.getElementById('prio-st-rest').innerText  = r.toLocaleString('fr');
+    document.getElementById('prio-nb').innerText       = p;
+    document.getElementById('prio-rest-nb').innerText  = r.toLocaleString('fr');
+    document.getElementById('prio-total-nb').innerText = t.toLocaleString('fr');
+}
+
+// ── MINI PLAYER PRIORITÉ ──
+function prioTogglePiP() {
+    _prioPip = !_prioPip;
+    const mp = document.getElementById('prio-mini-player');
+    const icon = document.querySelector('#prio-pip-toggle i');
+    if (_prioPip) {
+        mp.classList.add('floating');
+        mp.style.right  = _prioPipX + 'px';
+        mp.style.bottom = _prioPipY + 'px';
+        icon.className  = 'fas fa-compress-alt';
+        _initPrioPipDrag();
+    } else {
+        mp.classList.remove('floating');
+        mp.style.right = mp.style.bottom = mp.style.left = mp.style.top = '';
+        icon.className = 'fas fa-external-link-alt';
+    }
+}
+
+function _initPrioPipDrag() {
+    const mp  = document.getElementById('prio-mini-player');
+    const hdl = document.getElementById('prio-pip-drag-handle');
+    if (!hdl || hdl._pipInit) return;
+    hdl._pipInit = true;
+    let startX, startY, startRight, startBottom;
+    hdl.addEventListener('mousedown', e => {
+        _prioPipDragging = true;
+        startX = e.clientX; startY = e.clientY;
+        startRight  = parseInt(mp.style.right)  || _prioPipX;
+        startBottom = parseInt(mp.style.bottom) || _prioPipY;
+        e.preventDefault();
+    });
+    document.addEventListener('mousemove', e => {
+        if (!_prioPipDragging) return;
+        const dx = e.clientX - startX, dy = e.clientY - startY;
+        mp.style.right  = Math.max(0, Math.min(startRight  - dx, window.innerWidth  - mp.offsetWidth))  + 'px';
+        mp.style.bottom = Math.max(0, Math.min(startBottom + dy, window.innerHeight - mp.offsetHeight)) + 'px';
+    });
+    document.addEventListener('mouseup', () => {
+        if (_prioPipDragging) { _prioPipX = parseInt(mp.style.right); _prioPipY = parseInt(mp.style.bottom); }
+        _prioPipDragging = false;
+    });
+    hdl.addEventListener('touchstart', e => {
+        _prioPipDragging = true;
+        startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+        startRight  = parseInt(mp.style.right)  || _prioPipX;
+        startBottom = parseInt(mp.style.bottom) || _prioPipY;
+    }, { passive: true });
+    document.addEventListener('touchmove', e => {
+        if (!_prioPipDragging) return;
+        mp.style.right  = Math.max(0, startRight  - (e.touches[0].clientX - startX)) + 'px';
+        mp.style.bottom = Math.max(0, startBottom + (e.touches[0].clientY - startY)) + 'px';
+    }, { passive: true });
+    document.addEventListener('touchend', () => { _prioPipDragging = false; });
+}
+
+function prioTestChannel(ch) {
+    if (_prioCurrentPlayUrl === ch.url) return;
+    prioStopPlayer(false);
+    _prioCurrentPlayUrl = ch.url;
+    document.getElementById('prio-mini-player-title').innerText = ch.name;
+    const logo = document.getElementById('prio-player-logo');
+    if (ch.logo) { logo.src = ch.logo; logo.style.display = 'inline-block'; } else logo.style.display = 'none';
+    prioPSetStatus('⏳', '');
+    const overlay = document.getElementById('prio-player-overlay');
+    overlay.classList.remove('hidden');
+    overlay.innerHTML = '<i class="fas fa-spinner" style="font-size:22px;color:#e50914;animation:spin .7s linear infinite;"></i><p style="font-size:11px;color:#555;margin-top:6px;">Connexion...</p>';
+    const video = document.getElementById('prio-test-video');
+    video.volume = document.getElementById('prio-vol-range').value / 100;
+    video.muted  = _prioMuted;
+    const isM3U8 = ch.url.includes('.m3u8') || ch.url.includes('m3u');
+    if (Hls.isSupported() && isM3U8) {
+        _prioHls = new Hls({ maxBufferLength: 10, maxMaxBufferLength: 20, enableWorker: false });
+        _prioHls.loadSource(ch.url);
+        _prioHls.attachMedia(video);
+        _prioHls.on(Hls.Events.MANIFEST_PARSED, () => {
+            video.play().then(() => { overlay.classList.add('hidden'); prioPSetStatus('🔴 EN DIRECT', 'live'); })
+            .catch(() => {
+                overlay.innerHTML = '<i class="fas fa-hand-pointer" style="color:#ffd700;font-size:22px;"></i><p style="font-size:11px;color:#aaa;margin-top:6px;">Cliquez pour lancer</p>';
+                overlay.onclick = () => { video.play(); overlay.classList.add('hidden'); overlay.onclick = null; };
+                prioPSetStatus('▶ Cliquer', '');
+            });
+        });
+        _prioHls.on(Hls.Events.ERROR, (ev, d) => {
+            if (d.fatal) { prioPSetStatus('❌ Erreur', 'err'); overlay.classList.remove('hidden'); overlay.innerHTML = '<i class="fas fa-times-circle" style="color:#e50914;font-size:22px;"></i><p style="font-size:11px;color:#555;margin-top:6px;">Flux indisponible</p>'; }
+        });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = ch.url;
+        video.play().then(() => { overlay.classList.add('hidden'); prioPSetStatus('🔴 EN DIRECT', 'live'); }).catch(() => prioPSetStatus('❌', 'err'));
+    } else {
+        video.src = ch.url;
+        video.play().then(() => { overlay.classList.add('hidden'); prioPSetStatus('🔴', 'live'); }).catch(() => prioPSetStatus('❌', 'err'));
+    }
+}
+
+function prioStopPlayer(resetTitle = true) {
+    if (_prioHls) { _prioHls.destroy(); _prioHls = null; }
+    const video = document.getElementById('prio-test-video');
+    video.pause(); video.src = '';
+    _prioCurrentPlayUrl = '';
+    const overlay = document.getElementById('prio-player-overlay');
+    overlay.classList.remove('hidden');
+    overlay.innerHTML = '<i class="fas fa-play-circle" style="font-size:28px;color:#222;"></i><p style="font-size:11px;color:#333;margin-top:6px;">Cliquez ▶ sur une chaîne</p>';
+    overlay.onclick = null;
+    if (resetTitle) { document.getElementById('prio-mini-player-title').innerText = 'Cliquez ▶ sur une chaîne pour tester'; document.getElementById('prio-player-logo').style.display = 'none'; }
+    prioPSetStatus('⏸', '');
+    if (_prioPip) prioTogglePiP();
+}
+
+function prioPSetStatus(msg, cls) { const el = document.getElementById('prio-mini-player-status'); el.innerText = msg; el.className = cls || ''; }
+function prioSetVol(v) { document.getElementById('prio-test-video').volume = v/100; document.getElementById('prio-vol-pct').innerText = v + '%'; }
+function prioToggleMute() { _prioMuted = !_prioMuted; document.getElementById('prio-test-video').muted = _prioMuted; document.getElementById('prio-btn-mute').innerHTML = _prioMuted ? '<i class="fas fa-volume-mute" style="color:#e50914;"></i>' : '<i class="fas fa-volume-mute"></i>'; }
+
+// ── AJOUT MANUEL PRIORITÉ ──
+function prioToggleAddPanel() {
+    const body    = document.getElementById('prio-add-panel-body');
+    const chevron = document.getElementById('prio-add-panel-chevron');
+    const open    = body.classList.toggle('open');
+    chevron.style.transform = open ? 'rotate(180deg)' : '';
+    if (open) {
+        const dl = document.getElementById('prio-cat-datalist');
+        dl.innerHTML = '';
+        const cats = [...new Set(prioAllChannels.map(c => c.category || 'Autres'))].sort();
+        cats.forEach(c => { const o = document.createElement('option'); o.value = c; dl.appendChild(o); });
+    }
+}
+function prioUpdateAddPreview() {
+    const name = document.getElementById('prio-add-name').value.trim() || 'Nom de la chaîne';
+    const logo = document.getElementById('prio-add-logo').value.trim();
+    const cat  = document.getElementById('prio-add-cat').value.trim()  || 'Catégorie';
+    document.getElementById('prio-add-preview-name').innerText = name;
+    document.getElementById('prio-add-preview-cat').innerText  = cat;
+    const img = document.getElementById('prio-add-preview-logo');
+    img.src = logo || 'https://via.placeholder.com/32?text=TV';
+}
+function prioTestAddChannel() {
+    const url  = document.getElementById('prio-add-url').value.trim();
+    const name = document.getElementById('prio-add-name').value.trim() || 'Test';
+    const logo = document.getElementById('prio-add-logo').value.trim();
+    if (!url) { prioPSetAddMsg('⚠️ Entrez une URL de flux', '#ffd700'); return; }
+    if (!document.getElementById('prio-add-panel-body').classList.contains('open')) prioToggleAddPanel();
+    prioTestChannel({ name, url, logo, category: document.getElementById('prio-add-cat').value.trim() || 'Autres' });
+    prioPSetAddMsg('▶ Test en cours dans le lecteur...', '#0af');
+}
+function prioAddChannelToList(asPriority) {
+    const name = document.getElementById('prio-add-name').value.trim();
+    const url  = document.getElementById('prio-add-url').value.trim();
+    const logo = document.getElementById('prio-add-logo').value.trim();
+    const cat  = document.getElementById('prio-add-cat').value.trim() || 'Autres';
+    if (!name) { prioPSetAddMsg('⚠️ Le nom est obligatoire', '#ffd700'); return; }
+    if (!url)  { prioPSetAddMsg('⚠️ L\'URL est obligatoire', '#ffd700'); return; }
+    if (!url.startsWith('http')) { prioPSetAddMsg('⚠️ URL invalide (doit commencer par http)', '#ffd700'); return; }
+    if (prioAllChannels.some(c => c.url === url)) { prioPSetAddMsg('⚠️ Cette URL existe déjà', '#ffd700'); return; }
+    const newCh = { name, url, logo: logo || '', category: cat };
+    prioAllChannels.push(newCh);
+    const catSel = document.getElementById('prio-cat-filter');
+    if (!Array.from(catSel.options).some(o => o.value === cat)) {
+        const o = document.createElement('option'); o.value = cat; o.textContent = cat; catSel.appendChild(o);
+    }
+    if (asPriority) { prioURLs.push(url); prioPSetAddMsg('✅ Chaîne ajoutée en priorité !', '#2ecc71'); }
+    else prioPSetAddMsg('✅ Chaîne ajoutée en bas de la liste', '#2ecc71');
+    prioMarkDirty(); prioFilterLeft(); prioRenderRight(); prioUpdateStats();
+    setTimeout(() => { prioClearAddForm(); document.getElementById('prio-add-msg').innerText = ''; }, 2000);
+}
+function prioClearAddForm() {
+    ['prio-add-name','prio-add-url','prio-add-logo','prio-add-cat'].forEach(id => document.getElementById(id).value = '');
+    prioUpdateAddPreview();
+    document.getElementById('prio-add-msg').innerText = '';
+}
+function prioPSetAddMsg(msg, color) { const el = document.getElementById('prio-add-msg'); el.innerText = msg; el.style.color = color || '#eee'; }
+
+// ── EXPORT JSON PRIORITÉ ──
+function prioExportJSON() {
+    if (!prioAllChannels.length) { toast('⚠️ Aucune chaîne à exporter', '#ffd700'); return; }
+    const prioSet    = new Set(prioURLs);
+    const prioChains = prioURLs.map(url => prioAllChannels.find(c => c.url === url)).filter(Boolean);
+    const restChains = prioAllChannels.filter(c => !prioSet.has(c.url));
+    const ordered    = [...prioChains, ...restChains];
+    const now = new Date();
+    const version = now.getFullYear() + '.' + String(now.getMonth()+1).padStart(2,'0') + '.' + String(now.getDate()).padStart(2,'0');
+    const payload = { version, count: ordered.length, saved_at: now.toISOString(), channels: ordered };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'channels_v' + version + '.json'; a.click(); URL.revokeObjectURL(a.href);
+    document.getElementById('prio-export-info').innerText = '✅ ' + ordered.length.toLocaleString('fr') + ' chaînes exportées';
+    setTimeout(() => document.getElementById('prio-export-info').innerText = '', 3000);
+    toast('✅ channels_v' + version + '.json téléchargé', '#2ecc71');
+}
+
+function _prioEsc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 </script>
 </body>
 </html>
